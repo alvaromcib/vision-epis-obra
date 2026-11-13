@@ -17,8 +17,8 @@ SWITCH = ('<nav class="lang" aria-label="Idioma / Language">'
 
 
 def render(tpl: str, data: str, lang: str, has_en: bool) -> str:
-    html = (tpl.replace("/*CSS*/", (SHARED / "style.css").read_text())
-               .replace("/*VIZ*/", (SHARED / "viz.js").read_text())
+    html = (tpl.replace("/*CSS*/", (SHARED / "style.css").read_text(encoding="utf-8"))
+               .replace("/*VIZ*/", (SHARED / "viz.js").read_text(encoding="utf-8"))
                .replace("/*DATA*/", data)
                .replace("https://www.malt.es/profile/alvaromartincoll1", MALT_URL)
                .replace("{{MALT_URL}}", MALT_URL))
@@ -34,16 +34,16 @@ def render(tpl: str, data: str, lang: str, has_en: bool) -> str:
 
 
 def build(project: Path) -> list:
-    data = (project / "results" / "results.json").read_text()
+    data = (project / "results" / "results.json").read_text(encoding="utf-8")
     tpl_en = project / "dashboard" / "template.en.html"
     has_en = tpl_en.exists()
     outs = [(project / "docs" / "index.html",
-             render((project / "dashboard" / "template.html").read_text(), data, "es", has_en))]
+             render((project / "dashboard" / "template.html").read_text(encoding="utf-8"), data, "es", has_en))]
     if has_en:
-        outs.append((project / "docs" / "en" / "index.html", render(tpl_en.read_text(), data, "en", True)))
+        outs.append((project / "docs" / "en" / "index.html", render(tpl_en.read_text(encoding="utf-8"), data, "en", True)))
     for path, html in outs:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(html)
+        path.write_text(html, encoding="utf-8")
     return [p for p, _ in outs]
 
 
