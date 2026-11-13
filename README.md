@@ -1,6 +1,8 @@
 # Visión artificial para seguridad en obra: detección de EPIs
 
-**Dashboard interactivo:** `docs/index.html` (publicado con GitHub Pages)
+**Dashboard interactivo:** https://alvaromcib.github.io/vision-epis-obra/
+
+![Dashboard](docs/portfolio/cover.jpg)
 
 Detector que identifica en imágenes de obra **casco, chaleco, guantes, gafas y botas**, y también cuándo **faltan**, para generar alertas de prevención de riesgos desde las cámaras que ya hay en obra. Modelo ligero que funciona **en CPU**, sin GPU ni servicios en la nube.
 
