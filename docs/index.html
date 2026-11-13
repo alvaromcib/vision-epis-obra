@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visión artificial: EPIs en obra · Álvaro Martín Coll</title>
+<style>:root {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #232321;
+  --text-1: #f0efec;
+  --text-2: #c3c2b7;
+  --text-3: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255,255,255,0.10);
+  --s1: #3987e5;  /* blue */
+  --s2: #d95926;  /* orange */
+  --s3: #199e70;  /* aqua */
+  --good: #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+  --accent: var(--s1);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-1); line-height: 1.5; }
+a { color: var(--accent); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; padding: 56px 0 40px; border-bottom: 1px solid var(--grid); margin-bottom: 32px; }
+.hero::before { content: ""; position: absolute; inset: -40% -10% auto auto; width: 720px; height: 720px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+  pointer-events: none; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; pointer-events: none; }
+.hero .wrap { position: relative; padding-bottom: 0; }
+.eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.08; margin: 10px 0 14px; letter-spacing: -.02em; max-width: 900px; }
+.lede { font-size: 18px; color: var(--text-2); max-width: 760px; margin: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.tag { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ring); color: var(--text-2); background: var(--surface); }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 0 0 28px; }
+.kpi { background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 18px 20px; }
+.kpi .l { font-size: 13px; color: var(--text-2); }
+.kpi .v { font-size: 34px; font-weight: 650; letter-spacing: -.02em; margin-top: 4px; }
+.kpi .d { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+.kpi.hero-kpi { background: linear-gradient(140deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface)); }
+.kpi.hero-kpi .v { font-size: 52px; }
+
+/* Cards */
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 20px; grid-column: span 12; min-width: 0; }
+.span-6 { grid-column: span 6; } .span-4 { grid-column: span 4; } .span-8 { grid-column: span 8; }
+@media (max-width: 860px) { .span-6, .span-4, .span-8 { grid-column: span 12; } }
+.card h2 { font-size: 17px; margin: 0 0 2px; }
+.card .sub { font-size: 13px; color: var(--text-3); margin: 0 0 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--text-2); margin: -4px 0 8px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--ring);
+  background: var(--surface-2); color: var(--text-2); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Story / method */
+.steps { counter-reset: s; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.step { background: var(--surface-2); border-radius: 12px; padding: 16px; font-size: 14px; color: var(--text-2); }
+.step b { display: block; color: var(--text-1); margin-bottom: 4px; }
+.step::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-size: 12px; color: var(--accent); font-weight: 700; }
+.note { font-size: 13px; color: var(--text-3); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); }
+th { color: var(--text-3); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--grid); display: flex; flex-wrap: wrap;
+  gap: 12px 24px; justify-content: space-between; font-size: 14px; color: var(--text-2); }
+.cta { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; padding: 10px 18px;
+  border-radius: 10px; font-weight: 600; }
+
+/* Viz */
+.viz-tick { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.viz-label { fill: var(--text-3); font-size: 12px; }
+.viz-tip { position: fixed; z-index: 10; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: #0b0b0b; border: 1px solid var(--ring); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  color: var(--text-1); box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.viz-tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.viz-bar { display: grid; grid-template-columns: 120px 1fr 96px; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
+.viz-bar-l { color: var(--text-2); }
+.viz-bar-t { height: 14px; }
+.viz-bar-f { display: block; height: 100%; border-radius: 0 4px 4px 0; }
+.viz-bar-v { color: var(--text-1); font-variant-numeric: tabular-nums; text-align: right; }
+.cm { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; font-size: 13px; }
+.cm div { padding: 14px; border-radius: 8px; text-align: center; background: var(--surface-2); }
+.cm .h { background: none; color: var(--text-3); padding: 6px; }
+.cm .ok { background: color-mix(in srgb, var(--good) 28%, var(--surface)); }
+.cm .bad { background: color-mix(in srgb, var(--crit) 24%, var(--surface)); }
+.cm b { display: block; font-size: 24px; }
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s, transform .6s; }
+.reveal.in { opacity: 1; transform: none; }
+</style>
+<style>
+:root { --accent: #199e70; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.shot { position: relative; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+.shot img { width: 100%; height: 220px; object-fit: cover; display: block; transition: transform .4s; }
+.shot:hover img { transform: scale(1.04); }
+.shot .cap { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 6px; }
+.pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(11,11,11,.8); color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 20; cursor: zoom-out; }
+.lightbox img { max-width: 94vw; max-height: 90vh; border-radius: 8px; }
+.lightbox.on { display: flex; }
+.hero-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .18; filter: saturate(.6); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-img" id="heroimg"></div>
+  <div class="wrap">
+    <div class="eyebrow">Caso demo · Visión artificial en obra</div>
+    <h1>Detectar en tiempo real quién trabaja sin casco o sin chaleco</h1>
+    <p class="lede">Detector de equipos de protección individual entrenado con imágenes reales de obra. Identifica casco, chaleco, guantes, gafas y botas,
+      y señala cuándo faltan, para generar alertas de seguridad desde las cámaras que ya hay en obra.</p>
+    <div class="tags"><span class="tag">YOLO11</span><span class="tag">Detección de objetos</span><span class="tag">Prevención de riesgos</span><span class="tag">Edge / CPU</span><span class="tag">Datos públicos</span></div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="kpis reveal">
+    <div class="kpi hero-kpi"><div class="l">Imágenes con trabajadores sin casco detectadas</div><div class="v" id="k-rec"></div><div class="d" id="k-rec-d"></div></div>
+    <div class="kpi"><div class="l">Precisión de la alerta «sin casco»</div><div class="v" id="k-prec"></div><div class="d">de las alertas, cuántas son reales</div></div>
+    <div class="kpi"><div class="l">Detección de casco (mAP50)</div><div class="v" id="k-helmet"></div><div class="d" id="k-vest"></div></div>
+    <div class="kpi"><div class="l">Tiempo por imagen en CPU</div><div class="v" id="k-ms"></div><div class="d">sin GPU: vale un PC de obra o un equipo edge</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card reveal">
+      <h2>El detector en acción</h2>
+      <p class="sub">Imágenes de validación que el modelo no vio al entrenar. Verde: EPI puesto · naranja: EPI que falta · azul: persona o máquina. Pulsa para ampliar.</p>
+      <div class="gallery" id="gal"></div>
+    </div>
+
+    <div class="card span-6 reveal">
+      <h2>Precisión por tipo de equipo</h2>
+      <p class="sub">mAP50 en validación (1 = perfecto).</p>
+      <div id="cls"></div>
+    </div>
+    <div class="card span-6 reveal">
+      <h2>Alerta «trabajador sin casco» por imagen</h2>
+      <p class="sub">Lo que vería un responsable de seguridad: ¿la imagen tiene a alguien sin casco?</p>
+      <div class="cm" id="cm"></div>
+      <p class="note" style="margin-top:14px">En producción, la alerta se confirma en varios fotogramas seguidos para filtrar falsos positivos puntuales.</p>
+    </div>
+
+    <div class="card reveal">
+      <h2>Cómo se hizo</h2>
+      <p class="sub">El mismo proceso que en un piloto con cámaras de obra.</p>
+      <div class="steps">
+        <div class="step"><b>Datos</b>1.000 imágenes de obra etiquetadas con 12 clases: EPI puesto, EPI ausente, personas y carretillas.</div>
+        <div class="step"><b>Modelo</b>YOLO11n preentrenado y ajustado a EPIs. Ligero a propósito: funciona en CPU, sin servidores caros.</div>
+        <div class="step"><b>Evaluación</b>Métricas por clase y, sobre todo, la alerta por imagen, que es lo que usa prevención.</div>
+        <div class="step"><b>Despliegue</b>Cámaras RTSP de obra → detector en local → alertas y registro de incidencias, sin enviar vídeo a terceros.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div><b>Álvaro Martín Coll</b> · Físico · Ingeniero de IA para industria y construcción<br>
+      <span class="note">Datos: Ultralytics Construction-PPE (AGPL-3.0). Proyecto demostrativo, sin datos de clientes.</span></div>
+    <div><a class="cta" href="https://www.malt.com/profile/alvaromartincoll">Hablemos de tu obra</a></div>
+  </footer>
+</main>
+<div class="lightbox" id="lb"><img alt=""></div>
+<script>/* Minimal SVG chart kit shared by the portfolio dashboards.
+   Line (crosshair + tooltip), scatter, horizontal bar. No dependencies. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const nice = (min, max, n = 5) => {
+    const span = max - min || 1;
+    const step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || 10 * mag;
+    const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let v = lo; v <= hi + step / 2; v += step) ticks.push(+v.toFixed(10));
+    return { lo, hi, ticks };
+  };
+  const fmt = (v) => {
+    const a = Math.abs(v);
+    if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+    if (a >= 1e4) return (v / 1e3).toFixed(0) + "K";
+    if (Number.isInteger(v)) return v.toLocaleString("es-ES");
+    return v.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+  };
+
+  let tip;
+  const tooltip = () => {
+    if (!tip) { tip = document.createElement("div"); tip.className = "viz-tip"; document.body.appendChild(tip); }
+    return tip;
+  };
+  const showTip = (html, ev) => {
+    const t = tooltip(); t.innerHTML = html; t.style.opacity = 1;
+    const r = t.getBoundingClientRect();
+    let x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+    if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+    t.style.left = x + "px"; t.style.top = y + "px";
+  };
+  const hideTip = () => { if (tip) tip.style.opacity = 0; };
+
+  function frame(host, o) {
+    host.innerHTML = "";
+    const W = host.clientWidth || 600, H = o.height || 300;
+    const m = { t: 12, r: o.right || 16, b: o.xLabel ? 44 : 28, l: 52 };
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, role: "img",
+                             "aria-label": o.aria || "" }, host);
+    return { svg, W, H, m, iw: W - m.l - m.r, ih: H - m.t - m.b };
+  }
+  function axes(f, xs, ys, o) {
+    const g = el("g", {}, f.svg);
+    ys.ticks.forEach((v) => {
+      const y = f.m.t + f.ih - ((v - ys.lo) / (ys.hi - ys.lo)) * f.ih;
+      el("line", { x1: f.m.l, x2: f.m.l + f.iw, y1: y, y2: y, stroke: css("--grid"), "stroke-width": 1 }, g);
+      const t = el("text", { x: f.m.l - 8, y: y + 4, "text-anchor": "end", class: "viz-tick" }, g);
+      t.textContent = (o.yFmt || fmt)(v);
+    });
+    xs.ticks.forEach((v) => {
+      const x = f.m.l + ((v - xs.lo) / (xs.hi - xs.lo)) * f.iw;
+      const t = el("text", { x, y: f.m.t + f.ih + 18, "text-anchor": "middle", class: "viz-tick" }, g);
+      t.textContent = (o.xFmt || fmt)(v);
+    });
+    el("line", { x1: f.m.l, x2: f.m.l + f.iw, y1: f.m.t + f.ih, y2: f.m.t + f.ih, stroke: css("--axis") }, g);
+    if (o.xLabel) {
+      const t = el("text", { x: f.m.l + f.iw / 2, y: f.H - 6, "text-anchor": "middle", class: "viz-label" }, g);
+      t.textContent = o.xLabel;
+    }
+    if (o.yLabel) {
+      const t = el("text", { x: 12, y: f.m.t + f.ih / 2, "text-anchor": "middle", class: "viz-label",
+                              transform: `rotate(-90 12 ${f.m.t + f.ih / 2})` }, g);
+      t.textContent = o.yLabel;
+    }
+  }
+
+  /* series: [{name, values, color, dash, fill}] ; x: array of numbers */
+  function line(host, o) {
+    const f = frame(host, o);
+    const all = o.series.flatMap((s) => s.values.filter((v) => v != null));
+    const xs = nice(Math.min(...o.x), Math.max(...o.x), o.xTicks || 6);
+    xs.lo = Math.min(...o.x); xs.hi = Math.max(...o.x);
+    xs.ticks = xs.ticks.filter((v) => v >= xs.lo && v <= xs.hi);
+    const ys = nice(o.yMin ?? Math.min(0, ...all), o.yMax ?? Math.max(...all), 5);
+    axes(f, xs, ys, o);
+    const X = (v) => f.m.l + ((v - xs.lo) / (xs.hi - xs.lo)) * f.iw;
+    const Y = (v) => f.m.t + f.ih - ((v - ys.lo) / (ys.hi - ys.lo)) * f.ih;
+    if (o.band) { // horizontal band e.g. alert zone
+      el("rect", { x: f.m.l, width: f.iw, y: Y(o.band.to), height: Y(o.band.from) - Y(o.band.to),
+                   fill: o.band.color, opacity: 0.12 }, f.svg);
+      const t = el("text", { x: f.m.l + f.iw - 6, y: Y(o.band.to) + 14, "text-anchor": "end", class: "viz-tick" }, f.svg);
+      t.textContent = o.band.label;
+    }
+    o.series.forEach((s) => {
+      let d = "", pen = false;
+      s.values.forEach((v, i) => {
+        if (v == null) { pen = false; return; }
+        d += (pen ? "L" : "M") + X(o.x[i]).toFixed(1) + "," + Y(v).toFixed(1); pen = true;
+      });
+      if (s.fill) {
+        const first = s.values.findIndex((v) => v != null);
+        const last = s.values.length - 1 - [...s.values].reverse().findIndex((v) => v != null);
+        el("path", { d: d + `L${X(o.x[last])},${Y(ys.lo)}L${X(o.x[first])},${Y(ys.lo)}Z`,
+                     fill: s.color, opacity: 0.1 }, f.svg);
+      }
+      el("path", { d, fill: "none", stroke: s.color, "stroke-width": s.width || 2,
+                   "stroke-linejoin": "round", "stroke-linecap": "round",
+                   "stroke-dasharray": s.dash || "" }, f.svg);
+    });
+    // crosshair
+    const hair = el("line", { y1: f.m.t, y2: f.m.t + f.ih, stroke: css("--axis"), opacity: 0 }, f.svg);
+    const dots = o.series.map((s) => el("circle", { r: 4, fill: s.color, stroke: css("--surface"),
+                                                     "stroke-width": 2, opacity: 0 }, f.svg));
+    const hit = el("rect", { x: f.m.l, y: f.m.t, width: f.iw, height: f.ih, fill: "transparent" }, f.svg);
+    hit.addEventListener("mousemove", (ev) => {
+      const r = f.svg.getBoundingClientRect();
+      const px = ((ev.clientX - r.left) / r.width) * f.W;
+      const xv = xs.lo + ((px - f.m.l) / f.iw) * (xs.hi - xs.lo);
+      let i = 0, best = Infinity;
+      o.x.forEach((v, k) => { const d = Math.abs(v - xv); if (d < best) { best = d; i = k; } });
+      hair.setAttribute("x1", X(o.x[i])); hair.setAttribute("x2", X(o.x[i])); hair.setAttribute("opacity", 1);
+      let html = `<b>${(o.xTip || ((v) => (o.xLabel || "x") + " " + fmt(v)))(o.x[i])}</b>`;
+      o.series.forEach((s, k) => {
+        const v = s.values[i];
+        if (v == null) { dots[k].setAttribute("opacity", 0); return; }
+        dots[k].setAttribute("cx", X(o.x[i])); dots[k].setAttribute("cy", Y(v)); dots[k].setAttribute("opacity", 1);
+        html += `<div><i style="background:${s.color}"></i>${s.name}: <b>${(o.yTip || fmt)(v)}</b></div>`;
+      });
+      showTip(html, ev);
+    });
+    hit.addEventListener("mouseleave", () => { hair.setAttribute("opacity", 0); dots.forEach((d) => d.setAttribute("opacity", 0)); hideTip(); });
+  }
+
+  /* points: [{x, y, label}] */
+  function scatter(host, o) {
+    const f = frame(host, o);
+    const vx = o.points.map((p) => p.x), vy = o.points.map((p) => p.y);
+    const lo = Math.min(0, ...vx, ...vy), hi = Math.max(...vx, ...vy);
+    const xs = nice(lo, hi, 5), ys = nice(lo, hi, 5);
+    axes(f, xs, ys, o);
+    const X = (v) => f.m.l + ((v - xs.lo) / (xs.hi - xs.lo)) * f.iw;
+    const Y = (v) => f.m.t + f.ih - ((v - ys.lo) / (ys.hi - ys.lo)) * f.ih;
+    if (o.diag) el("line", { x1: X(xs.lo), y1: Y(ys.lo), x2: X(Math.min(xs.hi, ys.hi)), y2: Y(Math.min(xs.hi, ys.hi)),
+                             stroke: css("--text-3"), "stroke-width": 1 }, f.svg);
+    o.points.forEach((p) => {
+      const c = el("circle", { cx: X(p.x), cy: Y(p.y), r: 4.5, fill: p.color || o.color,
+                               stroke: css("--surface"), "stroke-width": 2 }, f.svg);
+      const h = el("circle", { cx: X(p.x), cy: Y(p.y), r: 10, fill: "transparent" }, f.svg);
+      h.addEventListener("mousemove", (ev) => { c.setAttribute("r", 6); showTip(p.tip || `${fmt(p.x)} → ${fmt(p.y)}`, ev); });
+      h.addEventListener("mouseleave", () => { c.setAttribute("r", 4.5); hideTip(); });
+    });
+  }
+
+  /* items: [{label, value}] horizontal bars, value labels at tip */
+  function bars(host, o) {
+    host.innerHTML = "";
+    const max = Math.max(...o.items.map((d) => d.value));
+    o.items.forEach((d) => {
+      const row = document.createElement("div"); row.className = "viz-bar";
+      row.innerHTML = `<span class="viz-bar-l">${d.label}</span>
+        <span class="viz-bar-t"><span class="viz-bar-f" style="width:${(100 * d.value) / max}%;background:${d.color || o.color}"></span></span>
+        <span class="viz-bar-v">${(o.fmt || fmt)(d.value)}</span>`;
+      row.addEventListener("mousemove", (ev) => showTip(`<b>${d.label}</b><div>${(o.fmt || fmt)(d.value)}</div>`, ev));
+      row.addEventListener("mouseleave", hideTip);
+      host.appendChild(row);
+    });
+  }
+
+  /* Animate numbers counting up (data-count attr) */
+  function countUp(root = document) {
+    root.querySelectorAll("[data-count]").forEach((e) => {
+      const target = parseFloat(e.dataset.count), dec = +(e.dataset.dec || 0);
+      const pre = e.dataset.pre || "", suf = e.dataset.suf || "";
+      const t0 = performance.now(), dur = 1200;
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / dur), v = target * (1 - Math.pow(1 - k, 3));
+        e.textContent = pre + v.toLocaleString("es-ES", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  window.Viz = { line, scatter, bars, countUp, fmt };
+})();
+</script>
+<script>
+const R = {"dataset": "Ultralytics Construction-PPE (800 entrenamiento / 200 validación)", "model": "YOLO11n ajustado (2,6 M parámetros)", "overall": {"map50": 0.659, "map50_95": 0.446, "precision": 0.871, "recall": 0.598}, "per_class": {"helmet": {"es": "Casco", "map50": 0.718, "precision": 0.923, "recall": 0.646}, "gloves": {"es": "Guantes", "map50": 0.712, "precision": 0.822, "recall": 0.648}, "vest": {"es": "Chaleco", "map50": 0.848, "precision": 0.937, "recall": 0.783}, "boots": {"es": "Botas", "map50": 0.657, "precision": 0.814, "recall": 0.592}, "goggles": {"es": "Gafas", "map50": 0.886, "precision": 0.873, "recall": 0.842}, "Person": {"es": "Persona", "map50": 0.888, "precision": 0.923, "recall": 0.824}, "no_helmet": {"es": "Sin casco", "map50": 0.463, "precision": 0.791, "recall": 0.413}, "no_goggle": {"es": "Sin gafas", "map50": 0.066, "precision": 1.0, "recall": 0.0}, "no_gloves": {"es": "Sin guantes", "map50": 0.521, "precision": 0.809, "recall": 0.459}, "no_boots": {"es": "Sin botas", "map50": 0.681, "precision": 0.805, "recall": 0.625}, "forklift": {"es": "Carretilla", "map50": 0.808, "precision": 0.818, "recall": 0.795}, "no_vest": {"es": "Sin chaleco", "map50": 0.662, "precision": 0.935, "recall": 0.55}}, "no_helmet_alert": {"tp": 62, "fp": 0, "fn": 29, "tn": 109, "recall": 0.681, "precision": 1.0}, "cpu_ms_per_image": 53.0, "examples": [{"img": "img/ultralytics-ppe-nov2026-498.jpg", "ok": 3, "viol": 5, "people": 2}, {"img": "img/source-5fd28e2e77938704bc78db0ee3ed95c5.jpg", "ok": 6, "viol": 0, "people": 7}, {"img": "img/ultralytics-ppe-nov2026-050.jpg", "ok": 5, "viol": 2, "people": 3}, {"img": "img/source-53cbca61c77e1f22da4e9c5a1e6acdb7.jpg", "ok": 1, "viol": 0, "people": 3}, {"img": "img/ultralytics-ppe-nov2026-299.jpg", "ok": 3, "viol": 3, "people": 2}, {"img": "img/ultralytics-ppe-nov2026-497.jpg", "ok": 4, "viol": 7, "people": 3}, {"img": "img/source-a8c726058fc542d983d5eb9427f86f09.jpg", "ok": 1, "viol": 0, "people": 5}, {"img": "img/source-ab1fb85dccb8e6325a99fca62a476ef7.jpg", "ok": 6, "viol": 2, "people": 6}]};
+const $ = (id) => document.getElementById(id);
+const pct = (v) => Math.round(v * 100) + " %";
+const A = R.no_helmet_alert;
+$("k-rec").textContent = pct(A.recall);
+$("k-rec-d").textContent = `${A.tp} de ${A.tp + A.fn} imágenes con alguien sin casco`;
+$("k-prec").textContent = pct(A.precision);
+$("k-helmet").textContent = (R.per_class.helmet?.map50 ?? 0).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+$("k-vest").textContent = `chaleco: ${(R.per_class.vest?.map50 ?? 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })}`;
+$("k-ms").textContent = R.cpu_ms_per_image + " ms";
+$("heroimg").style.backgroundImage = `url(${R.examples[0].img})`;
+
+$("gal").innerHTML = R.examples.map((e) => `<div class="shot" data-src="${e.img}"><img src="${e.img}" loading="lazy" alt="Detección de EPIs">
+  <div class="cap">${e.ok ? `<span class="pill"><i style="background:#199e70"></i>${e.ok} EPI ok</span>` : ""}${e.viol ? `<span class="pill"><i style="background:#d95926"></i>${e.viol} sin EPI</span>` : ""}</div></div>`).join("");
+document.querySelectorAll(".shot").forEach((s) => s.onclick = () => { $("lb").querySelector("img").src = s.dataset.src; $("lb").classList.add("on"); });
+$("lb").onclick = () => $("lb").classList.remove("on");
+
+$("cm").innerHTML = `<div class="h"></div><div class="h">Alerta</div><div class="h">Sin alerta</div>
+  <div class="h" style="text-align:right">Alguien sin casco</div><div class="ok"><b>${A.tp}</b>detectadas</div><div class="${A.fn ? "bad" : ""}"><b>${A.fn}</b>no detectadas</div>
+  <div class="h" style="text-align:right">Todos con casco</div><div class="${A.fp ? "bad" : ""}"><b>${A.fp}</b>falsas alarmas</div><div class="ok"><b>${A.tn}</b>correctas</div>`;
+
+function draw() {
+  const order = ["helmet", "vest", "Person", "no_helmet", "boots", "gloves", "goggles", "no_gloves", "no_boots", "no_goggle", "no_vest", "forklift"];
+  const items = order.filter((k) => R.per_class[k]).map((k) => ({ label: R.per_class[k].es, value: R.per_class[k].map50,
+    color: k.startsWith("no_") ? "#d95926" : (k === "Person" || k === "forklift") ? "#3987e5" : "#199e70" }));
+  Viz.bars($("cls"), { items, fmt: (v) => v.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+}
+draw();
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .1 });
+document.querySelectorAll(".reveal").forEach((e) => io.observe(e));
+</script>
+</body>
+</html>

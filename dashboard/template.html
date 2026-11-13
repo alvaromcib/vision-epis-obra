@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visión artificial: EPIs en obra · Álvaro Martín Coll</title>
+<style>/*CSS*/</style>
+<style>
+:root { --accent: #199e70; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.shot { position: relative; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+.shot img { width: 100%; height: 220px; object-fit: cover; display: block; transition: transform .4s; }
+.shot:hover img { transform: scale(1.04); }
+.shot .cap { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 6px; }
+.pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(11,11,11,.8); color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 20; cursor: zoom-out; }
+.lightbox img { max-width: 94vw; max-height: 90vh; border-radius: 8px; }
+.lightbox.on { display: flex; }
+.hero-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .18; filter: saturate(.6); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-img" id="heroimg"></div>
+  <div class="wrap">
+    <div class="eyebrow">Caso demo · Visión artificial en obra</div>
+    <h1>Detectar en tiempo real quién trabaja sin casco o sin chaleco</h1>
+    <p class="lede">Detector de equipos de protección individual entrenado con imágenes reales de obra. Identifica casco, chaleco, guantes, gafas y botas,
+      y señala cuándo faltan, para generar alertas de seguridad desde las cámaras que ya hay en obra.</p>
+    <div class="tags"><span class="tag">YOLO11</span><span class="tag">Detección de objetos</span><span class="tag">Prevención de riesgos</span><span class="tag">Edge / CPU</span><span class="tag">Datos públicos</span></div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="kpis reveal">
+    <div class="kpi hero-kpi"><div class="l">Imágenes con trabajadores sin casco detectadas</div><div class="v" id="k-rec"></div><div class="d" id="k-rec-d"></div></div>
+    <div class="kpi"><div class="l">Precisión de la alerta «sin casco»</div><div class="v" id="k-prec"></div><div class="d">de las alertas, cuántas son reales</div></div>
+    <div class="kpi"><div class="l">Detección de casco (mAP50)</div><div class="v" id="k-helmet"></div><div class="d" id="k-vest"></div></div>
+    <div class="kpi"><div class="l">Tiempo por imagen en CPU</div><div class="v" id="k-ms"></div><div class="d">sin GPU: vale un PC de obra o un equipo edge</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card reveal">
+      <h2>El detector en acción</h2>
+      <p class="sub">Imágenes de validación que el modelo no vio al entrenar. Verde: EPI puesto · naranja: EPI que falta · azul: persona o máquina. Pulsa para ampliar.</p>
+      <div class="gallery" id="gal"></div>
+    </div>
+
+    <div class="card span-6 reveal">
+      <h2>Precisión por tipo de equipo</h2>
+      <p class="sub">mAP50 en validación (1 = perfecto).</p>
+      <div id="cls"></div>
+    </div>
+    <div class="card span-6 reveal">
+      <h2>Alerta «trabajador sin casco» por imagen</h2>
+      <p class="sub">Lo que vería un responsable de seguridad: ¿la imagen tiene a alguien sin casco?</p>
+      <div class="cm" id="cm"></div>
+      <p class="note" style="margin-top:14px">En producción, la alerta se confirma en varios fotogramas seguidos para filtrar falsos positivos puntuales.</p>
+    </div>
+
+    <div class="card reveal">
+      <h2>Cómo se hizo</h2>
+      <p class="sub">El mismo proceso que en un piloto con cámaras de obra.</p>
+      <div class="steps">
+        <div class="step"><b>Datos</b>1.000 imágenes de obra etiquetadas con 12 clases: EPI puesto, EPI ausente, personas y carretillas.</div>
+        <div class="step"><b>Modelo</b>YOLO11n preentrenado y ajustado a EPIs. Ligero a propósito: funciona en CPU, sin servidores caros.</div>
+        <div class="step"><b>Evaluación</b>Métricas por clase y, sobre todo, la alerta por imagen, que es lo que usa prevención.</div>
+        <div class="step"><b>Despliegue</b>Cámaras RTSP de obra → detector en local → alertas y registro de incidencias, sin enviar vídeo a terceros.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div><b>Álvaro Martín Coll</b> · Físico · Ingeniero de IA para industria y construcción<br>
+      <span class="note">Datos: Ultralytics Construction-PPE (AGPL-3.0). Proyecto demostrativo, sin datos de clientes.</span></div>
+    <div><a class="cta" href="{{MALT_URL}}">Hablemos de tu obra</a></div>
+  </footer>
+</main>
+<div class="lightbox" id="lb"><img alt=""></div>
+<script>/*VIZ*/</script>
+<script>
+const R = /*DATA*/;
+const $ = (id) => document.getElementById(id);
+const pct = (v) => Math.round(v * 100) + " %";
+const A = R.no_helmet_alert;
+$("k-rec").textContent = pct(A.recall);
+$("k-rec-d").textContent = `${A.tp} de ${A.tp + A.fn} imágenes con alguien sin casco`;
+$("k-prec").textContent = pct(A.precision);
+$("k-helmet").textContent = (R.per_class.helmet?.map50 ?? 0).toLocaleString("es-ES", { maximumFractionDigits: 2 });
+$("k-vest").textContent = `chaleco: ${(R.per_class.vest?.map50 ?? 0).toLocaleString("es-ES", { maximumFractionDigits: 2 })}`;
+$("k-ms").textContent = R.cpu_ms_per_image + " ms";
+$("heroimg").style.backgroundImage = `url(${R.examples[0].img})`;
+
+$("gal").innerHTML = R.examples.map((e) => `<div class="shot" data-src="${e.img}"><img src="${e.img}" loading="lazy" alt="Detección de EPIs">
+  <div class="cap">${e.ok ? `<span class="pill"><i style="background:#199e70"></i>${e.ok} EPI ok</span>` : ""}${e.viol ? `<span class="pill"><i style="background:#d95926"></i>${e.viol} sin EPI</span>` : ""}</div></div>`).join("");
+document.querySelectorAll(".shot").forEach((s) => s.onclick = () => { $("lb").querySelector("img").src = s.dataset.src; $("lb").classList.add("on"); });
+$("lb").onclick = () => $("lb").classList.remove("on");
+
+$("cm").innerHTML = `<div class="h"></div><div class="h">Alerta</div><div class="h">Sin alerta</div>
+  <div class="h" style="text-align:right">Alguien sin casco</div><div class="ok"><b>${A.tp}</b>detectadas</div><div class="${A.fn ? "bad" : ""}"><b>${A.fn}</b>no detectadas</div>
+  <div class="h" style="text-align:right">Todos con casco</div><div class="${A.fp ? "bad" : ""}"><b>${A.fp}</b>falsas alarmas</div><div class="ok"><b>${A.tn}</b>correctas</div>`;
+
+function draw() {
+  const order = ["helmet", "vest", "Person", "no_helmet", "boots", "gloves", "goggles", "no_gloves", "no_boots", "no_goggle", "no_vest", "forklift"];
+  const items = order.filter((k) => R.per_class[k]).map((k) => ({ label: R.per_class[k].es, value: R.per_class[k].map50,
+    color: k.startsWith("no_") ? "#d95926" : (k === "Person" || k === "forklift") ? "#3987e5" : "#199e70" }));
+  Viz.bars($("cls"), { items, fmt: (v) => v.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+}
+draw();
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .1 });
+document.querySelectorAll(".reveal").forEach((e) => io.observe(e));
+</script>
+</body>
+</html>
