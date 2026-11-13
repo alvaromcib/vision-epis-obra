@@ -2,6 +2,7 @@
    Line (crosshair + tooltip), scatter, horizontal bar. No dependencies. */
 (function () {
   const NS = "http://www.w3.org/2000/svg";
+  const LOC = (document.documentElement.lang || "es").startsWith("en") ? "en-US" : "es-ES";
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const el = (tag, attrs = {}, parent) => {
     const e = document.createElementNS(NS, tag);
@@ -22,8 +23,8 @@
     const a = Math.abs(v);
     if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
     if (a >= 1e4) return (v / 1e3).toFixed(0) + "K";
-    if (Number.isInteger(v)) return v.toLocaleString("es-ES");
-    return v.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+    if (Number.isInteger(v)) return v.toLocaleString(LOC);
+    return v.toLocaleString(LOC, { maximumFractionDigits: 2 });
   };
 
   let tip;
@@ -174,12 +175,12 @@
       const t0 = performance.now(), dur = 1200;
       const step = (t) => {
         const k = Math.min(1, (t - t0) / dur), v = target * (1 - Math.pow(1 - k, 3));
-        e.textContent = pre + v.toLocaleString("es-ES", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
+        e.textContent = pre + v.toLocaleString(LOC, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
         if (k < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
     });
   }
 
-  window.Viz = { line, scatter, bars, countUp, fmt };
+  window.Viz = { line, scatter, bars, countUp, fmt, LOC };
 })();

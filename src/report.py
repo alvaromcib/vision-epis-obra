@@ -20,6 +20,9 @@ IMG_OUT.mkdir(parents=True, exist_ok=True)
 ES = {"helmet": "Casco", "gloves": "Guantes", "vest": "Chaleco", "boots": "Botas", "goggles": "Gafas",
       "Person": "Persona", "no_helmet": "Sin casco", "no_goggle": "Sin gafas", "no_gloves": "Sin guantes",
       "no_boots": "Sin botas", "forklift": "Carretilla", "no_vest": "Sin chaleco"}
+EN = {"helmet": "Helmet", "gloves": "Gloves", "vest": "Vest", "boots": "Boots", "goggles": "Goggles",
+      "Person": "Person", "no_helmet": "No helmet", "no_goggle": "No goggles", "no_gloves": "No gloves",
+      "no_boots": "No boots", "forklift": "Forklift", "no_vest": "No vest"}
 OK = (25, 158, 112)      # aqua: PPE worn
 BAD = (217, 89, 38)      # orange: missing PPE
 NEUTRAL = (57, 135, 229) # blue: person / machine
@@ -30,7 +33,7 @@ def color(name):
     return BAD if name in VIOLATIONS else NEUTRAL if name in ("Person", "forklift") else OK
 
 
-def draw(img_path: Path, res, names, out_path: Path, conf=0.35):
+def draw(img_path: Path, res, names, out_path: Path, conf=0.35, labels=ES):
     im = Image.open(img_path).convert("RGB")
     im.thumbnail((960, 960))
     sx = im.width / res.orig_shape[1]
@@ -47,7 +50,7 @@ def draw(img_path: Path, res, names, out_path: Path, conf=0.35):
         x1, y1, x2, y2 = [v * sx for v in b.xyxy[0].tolist()]
         c = color(n)
         d.rectangle([x1, y1, x2, y2], outline=c, width=3)
-        label = f"{ES[n]} {float(b.conf):.0%}"
+        label = f"{labels[n]} {float(b.conf):.0%}"
         tw = d.textlength(label, font=font)
         d.rectangle([x1, y1 - font.size - 6, x1 + tw + 8, y1], fill=c)
         d.text((x1 + 4, y1 - font.size - 4), label, fill="white", font=font)

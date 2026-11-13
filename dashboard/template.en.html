@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computer vision: PPE on construction sites · Álvaro Martín Coll</title>
+<style>/*CSS*/</style>
+<style>
+:root { --accent: #199e70; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.shot { position: relative; border-radius: 12px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+.shot img { width: 100%; height: 220px; object-fit: cover; display: block; transition: transform .4s; }
+.shot:hover img { transform: scale(1.04); }
+.shot .cap { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 6px; }
+.pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(11,11,11,.8); color: var(--text-1); display: inline-flex; align-items: center; gap: 6px; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 20; cursor: zoom-out; }
+.lightbox img { max-width: 94vw; max-height: 90vh; border-radius: 8px; }
+.lightbox.on { display: flex; }
+.hero-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .18; filter: saturate(.6); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-img" id="heroimg"></div>
+  <div class="wrap">
+    <div class="eyebrow">Demo case · Computer vision on site</div>
+    <h1>Detecting in real time who is working without a helmet or vest</h1>
+    <p class="lede">A personal protective equipment (PPE) detector trained on real construction-site images. It identifies helmets, vests, gloves, goggles and boots,
+      and flags when they are missing, to raise safety alerts from the cameras already on site.</p>
+    <div class="tags"><span class="tag">YOLO11</span><span class="tag">Object detection</span><span class="tag">Health &amp; safety</span><span class="tag">Edge / CPU</span><span class="tag">Public data</span></div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="kpis reveal">
+    <div class="kpi hero-kpi"><div class="l">Images with workers without a helmet detected</div><div class="v" id="k-rec"></div><div class="d" id="k-rec-d"></div></div>
+    <div class="kpi"><div class="l">Precision of the "no helmet" alert</div><div class="v" id="k-prec"></div><div class="d">of the alerts, how many are real</div></div>
+    <div class="kpi"><div class="l">Helmet detection (mAP50)</div><div class="v" id="k-helmet"></div><div class="d" id="k-vest"></div></div>
+    <div class="kpi"><div class="l">Time per image on CPU</div><div class="v" id="k-ms"></div><div class="d">no GPU: a site PC or an edge device is enough</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card reveal">
+      <h2>The detector in action</h2>
+      <p class="sub">Validation images the model didn't see during training. Green: PPE worn · orange: missing PPE · blue: person or machine. Click to enlarge.</p>
+      <div class="gallery" id="gal"></div>
+    </div>
+
+    <div class="card span-6 reveal">
+      <h2>Accuracy by equipment type</h2>
+      <p class="sub">mAP50 on validation (1 = perfect).</p>
+      <div id="cls"></div>
+    </div>
+    <div class="card span-6 reveal">
+      <h2>"Worker without a helmet" alert per image</h2>
+      <p class="sub">What a safety manager would see: is anyone in the image without a helmet?</p>
+      <div class="cm" id="cm"></div>
+      <p class="note" style="margin-top:14px">In production, the alert is confirmed over several consecutive frames to filter out one-off false positives.</p>
+    </div>
+
+    <div class="card reveal">
+      <h2>How it was built</h2>
+      <p class="sub">The same process as in a pilot with site cameras.</p>
+      <div class="steps">
+        <div class="step"><b>Data</b>1,000 construction-site images labelled with 12 classes: PPE worn, PPE missing, people and forklifts.</div>
+        <div class="step"><b>Model</b>Pretrained YOLO11n fine-tuned for PPE. Lightweight on purpose: it runs on CPU, no expensive servers.</div>
+        <div class="step"><b>Evaluation</b>Per-class metrics and, above all, the per-image alert, which is what safety teams actually use.</div>
+        <div class="step"><b>Deployment</b>On-site RTSP cameras → local detector → alerts and incident log, without sending video to third parties.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div><b>Álvaro Martín Coll</b> · Physicist · AI engineer for industry and construction<br>
+      <span class="note">Data: Ultralytics Construction-PPE (AGPL-3.0). Demo project, no client data.</span></div>
+    <div><a class="cta" href="{{MALT_URL}}">Let's talk about your site</a></div>
+  </footer>
+</main>
+<div class="lightbox" id="lb"><img alt=""></div>
+<script>/*VIZ*/</script>
+<script>
+const R = /*DATA*/;
+const $ = (id) => document.getElementById(id);
+const pct = (v) => Math.round(v * 100) + "%";
+const EN = { helmet: "Helmet", gloves: "Gloves", vest: "Vest", boots: "Boots", goggles: "Goggles", Person: "Person", no_helmet: "No helmet", no_goggle: "No goggles", no_gloves: "No gloves", no_boots: "No boots", forklift: "Forklift", no_vest: "No vest" };
+const A = R.no_helmet_alert;
+R.examples.forEach((e) => { e.img = e.img.replace("img/", "img/en/"); });
+$("k-rec").textContent = pct(A.recall);
+$("k-rec-d").textContent = `${A.tp} of ${A.tp + A.fn} images with someone without a helmet`;
+$("k-prec").textContent = pct(A.precision);
+$("k-helmet").textContent = (R.per_class.helmet?.map50 ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+$("k-vest").textContent = `vest: ${(R.per_class.vest?.map50 ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+$("k-ms").textContent = R.cpu_ms_per_image + " ms";
+$("heroimg").style.backgroundImage = `url(${R.examples[0].img})`;
+
+$("gal").innerHTML = R.examples.map((e) => `<div class="shot" data-src="${e.img}"><img src="${e.img}" loading="lazy" alt="PPE detection">
+  <div class="cap">${e.ok ? `<span class="pill"><i style="background:#199e70"></i>${e.ok} PPE ok</span>` : ""}${e.viol ? `<span class="pill"><i style="background:#d95926"></i>${e.viol} missing PPE</span>` : ""}</div></div>`).join("");
+document.querySelectorAll(".shot").forEach((s) => s.onclick = () => { $("lb").querySelector("img").src = s.dataset.src; $("lb").classList.add("on"); });
+$("lb").onclick = () => $("lb").classList.remove("on");
+
+$("cm").innerHTML = `<div class="h"></div><div class="h">Alert</div><div class="h">No alert</div>
+  <div class="h" style="text-align:right">Someone without helmet</div><div class="ok"><b>${A.tp}</b>detected</div><div class="${A.fn ? "bad" : ""}"><b>${A.fn}</b>missed</div>
+  <div class="h" style="text-align:right">Everyone with helmet</div><div class="${A.fp ? "bad" : ""}"><b>${A.fp}</b>false alarms</div><div class="ok"><b>${A.tn}</b>correct</div>`;
+
+function draw() {
+  const order = ["helmet", "vest", "Person", "no_helmet", "boots", "gloves", "goggles", "no_gloves", "no_boots", "no_goggle", "no_vest", "forklift"];
+  const items = order.filter((k) => R.per_class[k]).map((k) => ({ label: EN[k] || k, value: R.per_class[k].map50,
+    color: k.startsWith("no_") ? "#d95926" : (k === "Person" || k === "forklift") ? "#3987e5" : "#199e70" }));
+  Viz.bars($("cls"), { items, fmt: (v) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+}
+draw();
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .1 });
+document.querySelectorAll(".reveal").forEach((e) => io.observe(e));
+</script>
+</body>
+</html>

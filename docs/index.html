@@ -100,6 +100,14 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
 .cm b { display: block; font-size: 24px; }
 .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s, transform .6s; }
 .reveal.in { opacity: 1; transform: none; }
+
+/* Language switch */
+.lang { position: fixed; top: 14px; right: 16px; z-index: 15; display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent); border: 1px solid var(--ring); border-radius: 999px;
+  backdrop-filter: blur(6px); font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+.lang a { color: var(--text-3); text-decoration: none; padding: 4px 10px; border-radius: 999px; }
+.lang a:hover { color: var(--text-1); }
+.lang a[aria-current="page"] { background: var(--accent); color: #fff; }
 </style>
 <style>
 :root { --accent: #199e70; }
@@ -117,6 +125,7 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
 </style>
 </head>
 <body>
+<nav class="lang" aria-label="Idioma / Language"><a href="./" hreflang="es" aria-current="page">ES</a><a href="en/" hreflang="en">EN</a></nav>
 <header class="hero">
   <div class="hero-img" id="heroimg"></div>
   <div class="wrap">
@@ -177,6 +186,7 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
    Line (crosshair + tooltip), scatter, horizontal bar. No dependencies. */
 (function () {
   const NS = "http://www.w3.org/2000/svg";
+  const LOC = (document.documentElement.lang || "es").startsWith("en") ? "en-US" : "es-ES";
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const el = (tag, attrs = {}, parent) => {
     const e = document.createElementNS(NS, tag);
@@ -197,8 +207,8 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
     const a = Math.abs(v);
     if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
     if (a >= 1e4) return (v / 1e3).toFixed(0) + "K";
-    if (Number.isInteger(v)) return v.toLocaleString("es-ES");
-    return v.toLocaleString("es-ES", { maximumFractionDigits: 2 });
+    if (Number.isInteger(v)) return v.toLocaleString(LOC);
+    return v.toLocaleString(LOC, { maximumFractionDigits: 2 });
   };
 
   let tip;
@@ -349,14 +359,14 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
       const t0 = performance.now(), dur = 1200;
       const step = (t) => {
         const k = Math.min(1, (t - t0) / dur), v = target * (1 - Math.pow(1 - k, 3));
-        e.textContent = pre + v.toLocaleString("es-ES", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
+        e.textContent = pre + v.toLocaleString(LOC, { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suf;
         if (k < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
     });
   }
 
-  window.Viz = { line, scatter, bars, countUp, fmt };
+  window.Viz = { line, scatter, bars, countUp, fmt, LOC };
 })();
 </script>
 <script>

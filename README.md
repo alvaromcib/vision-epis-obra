@@ -1,46 +1,47 @@
-# Visión artificial para seguridad en obra: detección de EPIs
+# Computer vision for construction-site safety: PPE detection
 
-**Dashboard interactivo:** https://alvaromcib.github.io/vision-epis-obra/
+**Interactive dashboard:** [English](https://alvaromcib.github.io/vision-epis-obra/en/) · [Español](https://alvaromcib.github.io/vision-epis-obra/)
 
 ![Dashboard](docs/portfolio/cover.jpg)
 
-Detector que identifica en imágenes de obra **casco, chaleco, guantes, gafas y botas**, y también cuándo **faltan**, para generar alertas de prevención de riesgos desde las cámaras que ya hay en obra. Modelo ligero que funciona **en CPU**, sin GPU ni servicios en la nube.
+A detector that identifies **helmets, vests, gloves, goggles and boots** in construction-site images, and also when they are **missing**, to raise health-and-safety alerts from the cameras already on site. A lightweight model that runs **on CPU**, with no GPU or cloud services.
 
-Proyecto demostrativo con el dataset público Construction-PPE de Ultralytics. No usa datos de clientes.
+Demo project built on Ultralytics' public Construction-PPE dataset. No client data is used.
 
-## Resultados (200 imágenes de validación)
+## Results (200 validation images)
 
-| Métrica | Valor |
+| Metric | Value |
 |---|---|
-| Imágenes con alguien sin casco que generan alerta | 62 de 91 (68 %) |
-| Falsas alarmas «sin casco» | 0 de 109 imágenes |
-| mAP50 casco / chaleco / persona | 0,72 / 0,85 / 0,89 |
-| mAP50 global (12 clases) | 0,66 |
-| Tiempo por imagen en CPU | ~53 ms |
+| Images with someone without a helmet that trigger an alert | 62 of 91 (68%) |
+| "No helmet" false alarms | 0 of 109 images |
+| mAP50 helmet / vest / person | 0.72 / 0.85 / 0.89 |
+| Overall mAP50 (12 classes) | 0.66 |
+| Time per image on CPU | ~53 ms |
 
-La alerta está calibrada para no molestar con falsas alarmas. En producción se confirma en varios fotogramas seguidos, lo que sube la detección real por persona y evento. Las clases con pocos ejemplos (por ejemplo «sin gafas») necesitan más datos del cliente para ser fiables.
+The alert is calibrated not to bother anyone with false alarms. In production it is confirmed over several consecutive frames, which raises real detection per person and event. Classes with few examples (for example "no goggles") need more of the client's own data to be reliable.
 
-## Estructura
+## Structure
 
-- `src/train.sh`: ajuste de YOLO11n sobre el dataset (15 épocas, 448 px, CPU).
-- `src/report.py`: evaluación por clase, alerta por imagen, tiempos y ejemplos anotados.
-- `models/epis_yolo11n.pt`: pesos entrenados (2,6 M parámetros).
-- `docs/`: dashboard autocontenido.
+- `src/train.sh`: fine-tunes YOLO11n on the dataset (15 epochs, 448 px, CPU).
+- `src/report.py`: per-class evaluation, per-image alert, timings and annotated examples.
+- `src/annotate_en.py`: redraws the same examples with English labels for the English dashboard.
+- `models/epis_yolo11n.pt`: trained weights (2.6 M parameters).
+- `docs/`: self-contained dashboard (Spanish at the root, English in `docs/en/`).
 
 ```bash
 pip install -r requirements.txt
-yolo detect predict model=models/epis_yolo11n.pt source=tu_imagen.jpg imgsz=448
+yolo detect predict model=models/epis_yolo11n.pt source=your_image.jpg imgsz=448
 ```
 
-## Cómo se aplicaría en una obra
+## How it would apply on a construction site
 
-1. Cámaras IP (RTSP) existentes o una cámara por zona crítica.
-2. Detector en un PC local o un equipo edge: el vídeo no sale de la obra.
-3. Alertas al responsable de prevención y registro de incidencias por zona y franja horaria.
-4. Ajuste con imágenes propias de la obra: uniformes, colores de casco, iluminación.
+1. Existing IP cameras (RTSP) or one camera per critical area.
+2. The detector on a local PC or an edge device: video never leaves the site.
+3. Alerts to the health-and-safety manager and an incident log by area and time slot.
+4. Fine-tuning with the site's own images: uniforms, helmet colours, lighting.
 
 ---
 
-**Álvaro Martín Coll** · Físico · Ingeniero de IA para industria y construcción · [Perfil en Malt](https://www.malt.com/profile/alvaromartincoll)
+**Álvaro Martín Coll** · Physicist · AI engineer for industry and construction · [Malt profile](https://www.malt.com/profile/alvaromartincoll)
 
-Datos y modelo base: [Ultralytics](https://docs.ultralytics.com/datasets/detect/construction-ppe/) (AGPL-3.0). Este repositorio se distribuye bajo AGPL-3.0.
+Data and base model: [Ultralytics](https://docs.ultralytics.com/datasets/detect/construction-ppe/) (AGPL-3.0). This repository is distributed under AGPL-3.0.
